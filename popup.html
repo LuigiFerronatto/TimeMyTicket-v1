@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TimeMyTicket</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+    </div>
+    <h1>TimeMyTicket</h1>
+  </header>
+  
+  <div id="active-timer-info" class="active-timer-section">
+    <div class="section-title">Timer Atual</div>
+    <div class="active-timer-content">
+      <div class="timer-info">
+        <span class="loading-spinner"></span>
+        <div class="loading">Carregando informações...</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="actions">
+    <button id="export-btn" class="btn btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Exportar Relatório
+    </button>
+    <button id="refresh-btn" class="btn btn-secondary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 4v6h-6"></path>
+        <path d="M1 20v-6h6"></path>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+      Atualizar
+    </button>
+    <button id="reset-all-btn" class="btn btn-danger">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"></path>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      </svg>
+      Resetar
+    </button>
+  </div>
+  
+  <div class="tab-container">
+    <div class="tabs">
+      <div id="tab-tickets" class="tab active">Tickets</div>
+      <div id="tab-phases" class="tab">Fases</div>
+      <div id="tab-settings" class="tab">Configurações</div>
+    </div>
+  </div>
+  
+  <div id="tickets-tab-content" class="tab-content">
+    <div class="timer-list-section">
+      <div class="section-title">
+        Tickets Monitorados
+        <span class="help-text">Clique direito para opções</span>
+      </div>
+      <div id="timer-list" class="timer-list">
+        <div class="loading">
+          <span class="loading-spinner"></span>
+          <p>Carregando dados...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="phases-tab-content" class="tab-content" style="display: none;">
+    <div class="timer-list-section">
+      <div class="section-title">
+        Tempo por Fase
+        <select id="phase-ticket-selector" class="form-control" style="width: 120px; font-size: 12px;">
+          <option value="all">Todos tickets</option>
+        </select>
+      </div>
+      <div id="phase-list" class="phase-list">
+        <div class="loading">
+          <span class="loading-spinner"></span>
+          <p>Carregando dados...</p>
+        </div>
+      </div>
+      
+      <div class="phase-bar-container" style="margin-top: 16px;">
+        <div class="section-title" style="font-size: 12px; margin-bottom: 4px;">Distribuição de tempo</div>
+        <div id="phase-bar" class="phase-bar">
+          <!-- Phase segments will be added here dynamically -->
+        </div>
+        <div id="phase-legend" class="phase-legend">
+          <!-- Legends will be added here dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="settings-tab-content" class="tab-content" style="display: none;">
+    <div class="settings-section">
+      <div class="section-title">Configurações de Cores</div>
+      <div class="settings-group">
+        <h3 class="settings-group-title">Cores por Fase</h3>
+        <div class="setting-item">
+          <label for="color-entregues">Entregues</label>
+          <input type="color" id="color-entregues" class="color-picker" data-type="lane" data-name="Entregues">
+          <button class="reset-color-btn" data-target="color-entregues">Resetar</button>
+        </div>
+        <div class="setting-item">
+          <label for="color-dispensados">Dispensados</label>
+          <input type="color" id="color-dispensados" class="color-picker" data-type="lane" data-name="Dispensados">
+          <button class="reset-color-btn" data-target="color-dispensados">Resetar</button>
+        </div>
+        <div class="setting-item">
+          <label for="color-impedidos">Impedidos</label>
+          <input type="color" id="color-impedidos" class="color-picker" data-type="lane" data-name="Impedidos">
+          <button class="reset-color-btn" data-target="color-impedidos">Resetar</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <h3 class="settings-group-title">Cores por Responsável CDA</h3>
+        
+        <!-- Predefined CDA members -->
+        <div class="setting-item">
+          <label for="color-thaila">Thaila Bahiense</label>
+          <input type="color" id="color-thaila" class="color-picker" data-type="owner" data-name="Thaila Bahiense">
+          <button class="reset-color-btn" data-target="color-thaila">Resetar</button>
+        </div>
+        <div class="setting-item">
+          <label for="color-marcos">Marcos Rodrigues</label>
+          <input type="color" id="color-marcos" class="color-picker" data-type="owner" data-name="Marcos Rodrigues">
+          <button class="reset-color-btn" data-target="color-marcos">Resetar</button>
+        </div>
+        <div class="setting-item">
+          <label for="color-pablo">Pablo Sathler</label>
+          <input type="color" id="color-pablo" class="color-picker" data-type="owner" data-name="Pablo Sathler">
+          <button class="reset-color-btn" data-target="color-pablo">Resetar</button>
+        </div>
+        <div class="setting-item">
+          <label for="color-luigi">Luigi Ferronatto</label>
+          <input type="color" id="color-luigi" class="color-picker" data-type="owner" data-name="Luigi Ferronatto">
+          <button class="reset-color-btn" data-target="color-luigi">Resetar</button>
+        </div>
+        <div class="setting-item">
+          <label for="color-pedro">Pedro Nascimento</label>
+          <input type="color" id="color-pedro" class="color-picker" data-type="owner" data-name="Pedro Nascimento">
+          <button class="reset-color-btn" data-target="color-pedro">Resetar</button>
+        </div>
+        <div class="setting-item">
+          <label for="color-fabricio">Fabricio Lago</label>
+          <input type="color" id="color-fabricio" class="color-picker" data-type="owner" data-name="Fabricio Lago">
+          <button class="reset-color-btn" data-target="color-fabricio">Resetar</button>
+        </div>
+        <div class="setting-item">
+          <label for="color-fernanda">Fernanda Cupertino</label>
+          <input type="color" id="color-fernanda" class="color-picker" data-type="owner" data-name="Fernanda Cupertino">
+          <button class="reset-color-btn" data-target="color-fernanda">Resetar</button>
+        </div>
+        
+        <!-- Custom owner input -->
+        <div class="setting-item custom-owner-row">
+          <input type="text" id="custom-owner-name" placeholder="Nome ou email do responsável" class="form-control">
+          <input type="color" id="custom-owner-color" class="color-picker">
+          <button id="add-custom-owner-btn" class="btn btn-secondary btn-sm">Adicionar</button>
+        </div>
+        
+        <!-- Custom owners list (dynamically populated) -->
+        <div id="custom-owners-list" class="custom-owners-list">
+          <!-- Custom owners will be added here dynamically -->
+        </div>
+      </div>
+      
+      <!-- Apply and Save buttons -->
+      <div class="settings-actions">
+        <button id="save-settings-btn" class="btn btn-primary">Salvar Configurações</button>
+        <button id="reset-all-settings-btn" class="btn btn-danger">Resetar Tudo</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Context menu for ticket items -->
+  <div id="context-menu" class="context-menu">
+    <div id="view-phases" class="context-menu-item">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="2"></circle>
+        <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
+      </svg>
+      Ver Detalhes por Fase
+    </div>
+    <div id="add-time" class="context-menu-item">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="16"></line>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+      </svg>
+      Adicionar Tempo
+    </div>
+    <div id="copy-time" class="context-menu-item">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+      Copiar Relatório
+    </div>
+    <div id="go-to-ticket" class="context-menu-item">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+        <polyline points="15 3 21 3 21 9"></polyline>
+        <line x1="10" y1="14" x2="21" y2="3"></line>
+      </svg>
+      Abrir Ticket
+    </div>
+    <div id="reset-timer" class="context-menu-item danger">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"></path>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      </svg>
+      Resetar Timer
+    </div>
+  </div>
+  
+  <!-- Modal para adicionar tempo manualmente -->
+  <div id="add-time-modal" class="add-time-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Adicionar Tempo</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Ticket</label>
+          <div id="modal-ticket-name" style="font-weight: 600;"></div>
+          <div id="modal-ticket-id" style="font-size: 12px; color: #7c98b6; font-family: monospace;"></div>
+        </div>
+        <div class="form-group">
+          <label for="phase-select">Fase</label>
+          <select id="phase-select" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label>Tempo a adicionar</label>
+          <div class="time-input-row">
+            <div class="time-input-group">
+              <input type="number" id="hours-input" class="form-control" min="0" value="0">
+              <label>horas</label>
+            </div>
+            <div class="time-input-group">
+              <input type="number" id="minutes-input" class="form-control" min="0" max="59" value="0">
+              <label>minutos</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cancel" class="btn btn-secondary">Cancelar</button>
+        <button id="modal-save" class="btn btn-primary">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    TimeMyTicket v1.0.0 • Monitoramento de tempo para HubSpot
+  </div>
+  
+  <script src="js/popup.js"></script>
+</body>
+</html>

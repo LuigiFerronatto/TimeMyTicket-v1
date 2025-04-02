@@ -1,0 +1,45 @@
+{
+    "manifest_version": 3,
+    "name": "TimeMyTicket",
+    "version": "1.0.0",
+    "description": "Cronometra e monitora o tempo gasto em tickets do HubSpot com interface intuitiva",
+    "permissions": ["storage", "tabs", "contextMenus", "downloads"],
+    "host_permissions": [
+      "https://*.hubspot.com/*"
+    ],
+    "background": {
+      "service_worker": "js/background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["https://*.hubspot.com/*"],
+        "js": [
+          "js/config.js",
+          "js/utils.js",
+          "js/timerManager.js",
+          "js/phaseManager.js",
+          "js/uiManager.js",
+          "js/colorManager.js",
+          "js/content.js"
+        ],
+        "css": ["css/styles.css"],
+        "run_at": "document_end"
+      }
+    ],
+    "icons": {
+      "128": "icons/icon128.png"
+    },
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": {
+        "128": "icons/icon128.png"
+      },
+      "default_title": "TimeMyTicket - Monitor de tempo em tickets"
+    },
+    "web_accessible_resources": [
+      {
+        "resources": ["fonts/*", "images/*", "css/*"],
+        "matches": ["https://*.hubspot.com/*"]
+      }
+    ]
+  }

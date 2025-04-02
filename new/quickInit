@@ -1,0 +1,25 @@
+/**
+ * Quick initialization to be called from console for testing
+ */
+quickInit() {
+  console.log('Performing quick initialization for debugging');
+  
+  // Inject all styles first
+  this.injectStyles();
+  
+  // Process existing cards
+  this.processExistingCards();
+  
+  // Apply color highlights
+  if (window.colorManager) {
+    window.colorManager.applyColorHighlights();
+  }
+  
+  return {
+    stats: {
+      processedCards: document.querySelectorAll('.ticket-timer-icon').length,
+      highlightedCards: document.querySelectorAll('.ticket-highlight').length,
+      activeCards: document.querySelectorAll('.timer-active-card').length
+    }
+  };
+}

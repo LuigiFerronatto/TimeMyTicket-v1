@@ -1,0 +1,40 @@
+/**
+ * Start border animation for active timer
+ * @param {Array<HTMLElement>} elements - The elements to animate
+ * @param {string} ticketId - The ticket ID
+ */
+startBorderAnimation(elements, ticketId) {
+  // Stop any existing animation for this ticket
+  this.stopBorderAnimation(ticketId);
+  
+  // Store the animation info
+  this.createdElements.animations.set(ticketId, {
+    elements,
+    running: true
+  });
+}
+
+/**
+ * Stop border animation
+ * @param {string} ticketId - The ticket ID
+ */
+stopBorderAnimation(ticketId) {
+  if (this.createdElements.animations.has(ticketId)) {
+    const animation = this.createdElements.animations.get(ticketId);
+    
+    // Mark as not running
+    animation.running = false;
+    
+    // Remove animation class from all elements
+    if (animation.elements) {
+      animation.elements.forEach(element => {
+        if (element) {
+          element.classList.remove('timer-active-card');
+        }
+      });
+    }
+    
+    // Remove from map
+    this.createdElements.animations.delete(ticketId);
+  }
+}

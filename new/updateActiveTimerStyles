@@ -1,0 +1,64 @@
+/**
+ * Update active timer styles
+ * @param {string} ticketId - The ticket ID
+ * @param {boolean} isActive - Whether the timer is active
+ */
+updateActiveTimerStyles(ticketId, isActive) {
+  // Find all cards with this ticket ID
+  const cards = document.querySelectorAll(`[${CONFIG.selectors.ticketIdAttribute}="${ticketId}"]`);
+  
+  cards.forEach(card => {
+    // Find all elements in the card hierarchy
+    const elements = this.findCardElements(card);
+    if (!elements.ticketCard) return;
+    
+    const timerIcon = elements.ticketCard.querySelector('.ticket-timer-icon');
+    if (!timerIcon) return;
+    
+    // Elements to apply active styles to
+    const styleTargets = [
+      elements.columnItem,     // Outermost container
+      elements.draggable,      // Draggable container
+      elements.tileWrapper,    // Tile wrapper
+      elements.viewContainer   // View container
+    ].filter(Boolean); // Filter out any null/undefined elements
+    
+    // Update tooltip
+    timerIcon.setAttribute('data-tooltip', isActive ? 'Pausar cronômetro' : 'Iniciar cronômetro');
+    
+    // Update active/inactive state
+    if (isActive) {
+      timerIcon.classList.add('active');
+      timerIcon.classList.add('expanded');
+      timerIcon.classList.remove('minimized');
+      
+      // Apply animated border to all targets
+      styleTargets.forEach(target => {
+        target.classList.add('timer-active-card');
+      });
+      
+      // Start animation
+      this.startBorderAnimation(styleTargets, ticketId);
+    } else {
+      timerIcon.classList.remove('active');
+      
+      // Check if it should remain expanded (if it has accumulated time)
+      const hasTime = window.timerManager && 
+                      window.timerManager.ticketTimers[ticketId] && 
+                      window.timerManager.ticketTimers[ticketId] > 0;
+                      
+      if (!hasTime) {
+        timerIcon.classList.remove('expanded');
+        timerIcon.classList.add('minimized');
+      }
+      
+      // Remove animated border from all targets
+      styleTargets.forEach(target => {
+        target.classList.remove('timer-active-card');
+      });
+      
+      // Stop animation
+      this.stopBorderAnimation(ticketId);
+    }
+  });
+}

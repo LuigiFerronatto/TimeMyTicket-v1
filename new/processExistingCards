@@ -1,0 +1,52 @@
+/**
+ * Process existing ticket cards in the DOM
+ */
+processExistingCards() {
+  console.log('Processing existing cards...');
+  
+  // Find all potential card elements by various selectors
+  const selectors = [
+    CONFIG.selectors.ticketCardSelector,
+    `[${CONFIG.selectors.ticketIdAttribute}]`,
+    '[data-selenium-info="true"]',
+    CONFIG.selectors.columnItemSelector
+  ];
+  
+  const processedIds = new Set();
+  
+  // Process each selector separately
+  selectors.forEach(selector => {
+    const elements = document.querySelectorAll(selector);
+    console.log(`Found ${elements.length} elements with selector "${selector}"`);
+    
+    elements.forEach(element => {
+      const cardElements = this.findCardElements(element);
+      
+      // Skip if we've already processed this ticket or no ID found
+      if (!cardElements.ticketId || processedIds.has(cardElements.ticketId)) {
+        return;
+      }
+      
+      // Mark as processed
+      processedIds.add(cardElements.ticketId);
+      
+      // Add timer if needed
+      if (cardElements.ticketCard && !cardElements.ticketCard.querySelector('.ticket-timer-icon')) {
+        console.log(`Adding timer to ticket ${cardElements.ticketId}`);
+        this.addTimerToCard(cardElements.ticketCard);
+      }
+    });
+  });
+  
+  console.log(`Processed ${processedIds.size} unique tickets`);
+  
+  // Apply color highlights
+  if (window.colorManager) {
+    window.colorManager.applyColorHighlights();
+  }
+  
+  // Apply active timer styles if there is an active timer
+  if (window.timerManager && window.timerManager.activeTicket) {
+    this.updateActiveTimerStyles(window.timerManager.activeTicket, true);
+  }
+}

@@ -452,3 +452,156 @@
   [data-test-id="cdb-card"] {
     position: relative; /* Positioning context for timer icon */
   }
+
+  
+  /* Active Timer highlight */
+@keyframes borderPulse {
+  0% { border-width: 1px; }
+  50% { border-width: 5px; }
+  100% { border-width: 1px; }
+}
+
+@keyframes borderRotate {
+  0% { border-color: #FF6F00; }
+  25% { border-color: #FFB100; }
+  50% { border-color: #00BDA5; }
+  75% { border-color: #0091AE; }
+  100% { border-color: #FF6F00; }
+}
+
+@keyframes boxShadowPulse {
+  0% { box-shadow: 0 0 5px rgba(255, 124, 32, 0.3); }
+  50% { box-shadow: 0 0 15px rgba(255, 124, 32, 0.5); }
+  100% { box-shadow: 0 0 5px rgba(255, 124, 32, 0.3); }
+}
+
+.timer-active-card {
+  position: relative !important;
+  overflow: visible !important;
+  border: 3px solid #FF6F00 !important;
+  animation: 
+    borderPulse 2s infinite ease-in-out,
+    borderRotate 8s infinite linear,
+    boxShadowPulse 3s infinite ease-in-out !important;
+  z-index: 1 !important;
+  transition: all 0.3s ease !important;
+  border-radius: 5px !important;
+  transform: scale(1.01) !important;
+}
+
+.timer-active-card .Card__StyledHoverContainer-w3updy-1 {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Timer icon styles */
+.ticket-timer-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ticket-timer-icon:hover {
+  background-color: rgba(255, 111, 0, 0.1);
+  transform: scale(1.05);
+}
+
+.ticket-timer-icon.active {
+  background-color: rgba(255, 111, 0, 0.2);
+}
+
+.ticket-timer-icon .timer-display {
+  margin-left: 4px;
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 12px;
+  color: #FF6F00;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.ticket-timer-icon.minimized .timer-display {
+  display: none;
+}
+
+.ticket-timer-icon.expanded .timer-display {
+  display: inline;
+}
+
+/* Highlight styles */
+.ticket-highlight {
+  position: relative;
+}
+
+.ticket-highlight::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  z-index: 1;
+}
+
+.lane-highlight-entregues::before {
+  background-color: var(--highlight-color, #00bda5);
+}
+
+.lane-highlight-dispensados::before {
+  background-color: var(--highlight-color, #ff5c35);
+}
+
+.lane-highlight-impedidos::before {
+  background-color: var(--highlight-color, #ffab00);
+}
+
+.owner-highlight::before {
+  background-color: var(--highlight-color);
+}
+
+/* Toast styles */
+.ticket-timer-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  color: white;
+  font-family: "Nunito Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.ticket-timer-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ticket-timer-toast.success {
+  background-color: #00bda5;
+}
+
+.ticket-timer-toast.info {
+  background-color: #0091ae;
+}
+
+.ticket-timer-toast.warning {
+  background-color: #ffab00;
+}
+
+.ticket-timer-toast.error {
+  background-color: #ff5c35;
+}

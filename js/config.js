@@ -4,29 +4,29 @@
 const CONFIG = {
     // HubSpot DOM selectors
     selectors: {
-              // Outermost item container
-              columnItemSelector: '[data-test-id="cdb-column-item"]',
-        
-              // Draggable container
-              draggableItemSelector: '[data-rbd-draggable-id]',
-              
-              // Clickable container
-              clickableSelector: '.UIClickable-w869x8-0',
-              
-              // Card containers (multiple levels)
-              tileWrapperSelector: '[data-test-id="cdb-card"]',
-              viewSelector: '.View__StyledView-rufepw-0',
-              
-              // The actual card with content
-              ticketCardSelector: '[data-test-id="cdbc-card"]',
-              
-              // ID attribute and other selectors
-              ticketIdAttribute: 'data-selenium-id',
-              phaseNameSelector: '[data-test-id="cdb-column-name"]',
-              cardTitleSelector: '[data-test-id="cdbc-title"] .TitleProperty__TwoLines-sc-1e9uvz9-0 span',
-              cardOwnerSelector: '[data-test-id="cdbc-property-0"] [data-test-id="cdbc-property-value"] span',
-              cdaResponsibleSelector: '[data-test-id="cdbc-property-1"] [data-test-id="cdbc-property-value"] span'
-    },
+      // Outermost item container
+      columnItemSelector: '[data-test-id="cdb-column-item"]',
+      
+      // Draggable container
+      draggableItemSelector: '[data-rbd-draggable-id]',
+      
+      // Clickable container
+      clickableSelector: '.UIClickable-w869x8-0',
+      
+      // Card containers (multiple levels)
+      tileWrapperSelector: '.CardContent__StyledTileWrapper-sc-10aeu2l-0',
+      viewSelector: '.View__StyledView-rufepw-0',
+      
+      // The actual card with content
+      ticketCardSelector: '[data-test-id="cdbc-card"]',
+      
+      // ID attribute and other selectors
+      ticketIdAttribute: 'data-selenium-id',
+      phaseNameSelector: '[data-test-id="cdb-column-name"] span span span',
+      cardTitleSelector: '[data-test-id="cdbc-title"] span span span',
+      cardOwnerSelector: '[data-test-id="cdbc-property-0"] [data-test-id="cdbc-property-value"] span',
+      cdaResponsibleSelector: '[data-test-id="cdbc-property-1"] [data-test-id="cdbc-property-value"] span'
+  },
     
     // Phase settings
     knownPhases: [

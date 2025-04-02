@@ -99,33 +99,78 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         // Get active tab
         const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tabs || !tabs[0] || !tabs[0].id) {
-          showError('Não foi possível encontrar a aba ativa.');
-          return;
-        }
         
-        // Request timer data
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'getTimerData' }, (response) => {
-          if (!response) {
-            showError('Extension não está ativa nesta página. Abra uma página do HubSpot para usar a extensão.');
-            return;
+        // First try to get data from background script
+        chrome.runtime.sendMessage({ action: 'getTimerState' }, (response) => {
+          if (response) {
+            // We got data from background script
+            const backgroundData = {
+              activeTicket: response.activeTicket,
+              timerStartTime: response.timerStartTime ? new Date(response.timerStartTime) : null,
+              ticketTimers: response.ticketTimers || {},
+              ticketTitles: response.ticketTitles || {}
+            };
+            
+            // If we have a HubSpot tab open, get more data from it
+            if (tabs && tabs[0] && tabs[0].id && tabs[0].url.includes('hubspot.com')) {
+              chrome.tabs.sendMessage(tabs[0].id, { action: 'getTimerData' }, (contentResponse) => {
+                if (contentResponse) {
+                  // Merge background data with content script data
+                  currentTimerData = {
+                    ...contentResponse,
+                    activeTicket: backgroundData.activeTicket,
+                    timerStartTime: backgroundData.timerStartTime,
+                    ticketTimers: backgroundData.ticketTimers,
+                    ticketTitles: backgroundData.ticketTitles
+                  };
+                  
+                  // Update UI with data
+                  renderActiveTimer(currentTimerData);
+                  renderTicketList(currentTimerData);
+                  populateTicketSelector(currentTimerData);
+                  loadColorSettings(currentTimerData.colorSettings);
+                  
+                  console.log('Data loaded from both sources:', currentTimerData);
+                } else {
+                  // Use just background data
+                  renderFromBackgroundData(backgroundData);
+                }
+              });
+            } else {
+              // No HubSpot tab, use just background data
+              renderFromBackgroundData(backgroundData);
+            }
+          } else {
+            showError('Erro ao carregar dados. Verifique se a extensão está funcionando corretamente.');
           }
-          
-          currentTimerData = response;
-          
-          // Update UI with data
-          renderActiveTimer(response);
-          renderTicketList(response);
-          populateTicketSelector(response);
-          loadColorSettings(response.colorSettings);
-          
-          console.log('Data loaded:', response);
         });
       } catch (error) {
         console.error('Error loading data:', error);
         showError('Erro ao carregar dados. Verifique se a extensão tem permissão para acessar esta página.');
       }
     }
+
+    /**
+ * Render UI from background data only
+ */
+function renderFromBackgroundData(data) {
+  currentTimerData = {
+    activeTicket: data.activeTicket,
+    timerStartTime: data.timerStartTime,
+    ticketTimers: data.ticketTimers,
+    ticketTitles: data.ticketTitles,
+    phaseTimers: {},  // Empty as we don't have this from background
+    currentPhases: {},
+    lastPhaseChange: {},
+    colorSettings: {}
+  };
+  
+  renderActiveTimer(currentTimerData);
+  renderTicketList(currentTimerData);
+  populateTicketSelector(currentTimerData);
+  
+  console.log('Data loaded from background only:', currentTimerData);
+}
     
     /**
      * Set up event listeners

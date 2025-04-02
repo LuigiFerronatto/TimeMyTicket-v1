@@ -605,3 +605,15 @@
 .ticket-timer-toast.error {
   background-color: #ff5c35;
 }
+
+.ticket-phase-info {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 11px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.ticket-phase-info:hover {
+  background-color: rgba(255, 111, 0, 0.1) !important;
+  color: #FF6F00 !important;
+}

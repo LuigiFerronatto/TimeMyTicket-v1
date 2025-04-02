@@ -225,6 +225,7 @@ class PhaseManager {
    * @param {string} newPhase - The new phase
    */
   // Melhore o método handlePhaseChange no PhaseManager.js
+// In PhaseManager.js, update the handlePhaseChange method
 handlePhaseChange(ticketId, newPhase) {
   console.log(`Ticket ${ticketId} movido para fase: ${newPhase}`);
   
@@ -245,13 +246,16 @@ handlePhaseChange(ticketId, newPhase) {
         this.phaseTimers[ticketId] = {};
       }
       
+      // Normalize phase names to uppercase for consistent comparisons
+      const normalizedOldPhase = oldPhase.toUpperCase();
+      
       // Acumule tempo na fase anterior
-      this.phaseTimers[ticketId][oldPhase] = (this.phaseTimers[ticketId][oldPhase] || 0) + timeInPreviousPhase;
+      this.phaseTimers[ticketId][normalizedOldPhase] = (this.phaseTimers[ticketId][normalizedOldPhase] || 0) + timeInPreviousPhase;
       
-      console.log(`Adicionado ${Utils.formatTimeWithSeconds(timeInPreviousPhase)} à fase "${oldPhase}" para o ticket ${ticketId}`);
-      console.log(`Total na fase "${oldPhase}": ${Utils.formatTimeWithSeconds(this.phaseTimers[ticketId][oldPhase])}`);
+      console.log(`Adicionado ${Utils.formatTimeWithSeconds(timeInPreviousPhase)} à fase "${normalizedOldPhase}" para o ticket ${ticketId}`);
+      console.log(`Total na fase "${normalizedOldPhase}": ${Utils.formatTimeWithSeconds(this.phaseTimers[ticketId][normalizedOldPhase])}`);
       
-      // Garanta que os dados são persistidos imediatamente
+      // Save phase data immediately
       this.savePhaseData();
       
       // Se o ticket está ativo, não adicione ao tempo total (o timer lidará com isso)
@@ -268,8 +272,11 @@ handlePhaseChange(ticketId, newPhase) {
     }
   }
   
+  // Normalize new phase name
+  const normalizedNewPhase = newPhase.toUpperCase();
+  
   // Atualize a fase atual e o timestamp
-  this.currentPhases[ticketId] = newPhase;
+  this.currentPhases[ticketId] = normalizedNewPhase;
   this.lastPhaseChange[ticketId] = now.toISOString();
   
   // Salve no armazenamento imediatamente
@@ -288,7 +295,7 @@ handlePhaseChange(ticketId, newPhase) {
     action: 'phaseChanged',
     ticketId: ticketId,
     oldPhase: oldPhase,
-    newPhase: newPhase
+    newPhase: normalizedNewPhase
   });
 }
   
@@ -394,39 +401,45 @@ logDOMStructure() {
   /**
    * Save phase data to storage
    */
-  savePhaseData() {
-    console.log('Salvando dados de fase:', {
-      phaseTimers: this.phaseTimers,
-      currentPhases: this.currentPhases,
-      lastPhaseChange: this.lastPhaseChange
-    });
-    
-    return new Promise((resolve, reject) => {
-      try {
-        // Salve dados de fase na storage local
-        chrome.storage.local.set({
-          [CONFIG.storageKeys.phaseTimers]: this.phaseTimers,
-          [CONFIG.storageKeys.currentPhases]: this.currentPhases,
-          [CONFIG.storageKeys.lastPhaseChange]: this.lastPhaseChange
-        }, () => {
-          if (chrome.runtime.lastError) {
-            console.error('Erro ao salvar dados de fase:', chrome.runtime.lastError);
-            reject(chrome.runtime.lastError);
-          } else {
-            console.log('Dados de fase salvos com sucesso');
-            resolve();
-          }
-        });
-      } catch (error) {
-        console.error('Erro ao salvar dados de fase:', error);
-        // Fallback para local storage no caso de erro
-        localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.phaseTimers}`, JSON.stringify(this.phaseTimers));
-        localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.currentPhases}`, JSON.stringify(this.currentPhases));
-        localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.lastPhaseChange}`, JSON.stringify(this.lastPhaseChange));
-        reject(error);
-      }
-    });
-  }
+  /**
+ * Save phase data to storage
+ */
+savePhaseData() {
+  console.log('Salvando dados de fase:', {
+    phaseTimers: this.phaseTimers,
+    currentPhases: this.currentPhases,
+    lastPhaseChange: this.lastPhaseChange
+  });
+  
+  return new Promise((resolve, reject) => {
+    try {
+      // Save phase data to both chrome.storage.local and localStorage for redundancy
+      chrome.storage.local.set({
+        [CONFIG.storageKeys.phaseTimers]: this.phaseTimers,
+        [CONFIG.storageKeys.currentPhases]: this.currentPhases,
+        [CONFIG.storageKeys.lastPhaseChange]: this.lastPhaseChange
+      }, () => {
+        if (chrome.runtime.lastError) {
+          console.error('Erro ao salvar dados de fase no chrome.storage:', chrome.runtime.lastError);
+          // Fall back to localStorage if chrome.storage fails
+          localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.phaseTimers}`, JSON.stringify(this.phaseTimers));
+          localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.currentPhases}`, JSON.stringify(this.currentPhases));
+          localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.lastPhaseChange}`, JSON.stringify(this.lastPhaseChange));
+        }
+        
+        console.log('Dados de fase salvos com sucesso');
+        resolve();
+      });
+    } catch (error) {
+      console.error('Erro ao salvar dados de fase:', error);
+      // Fallback para local storage no caso de erro
+      localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.phaseTimers}`, JSON.stringify(this.phaseTimers));
+      localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.currentPhases}`, JSON.stringify(this.currentPhases));
+      localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.lastPhaseChange}`, JSON.stringify(this.lastPhaseChange));
+      resolve();
+    }
+  });
+}
 }
 
 // Create global instance

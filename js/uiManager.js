@@ -498,7 +498,7 @@ addTimerToCard(cardElement) {
       e.stopPropagation(); // Prevent card selection
       
       // Add visual feedback when clicked
-      timerIcon.style.transform = 'scale(0.95)';
+      timerIcon.style.transform = 'scale(0.9)';
       setTimeout(() => {
         timerIcon.style.transform = '';
       }, 150);
@@ -508,6 +508,56 @@ addTimerToCard(cardElement) {
         window.timerManager.toggleTimer(ticketId);
       }
     });
+
+    if (window.phaseManager && elements.ticketId) {
+      // Get phase data
+      const phaseData = window.phaseManager.getTicketPhaseData(elements.ticketId);
+      
+      // Only show if we have phase data
+      if (phaseData && phaseData.phaseTimers && Object.keys(phaseData.phaseTimers).length > 0) {
+        // Create a container for phase info
+        const phaseInfo = document.createElement('div');
+        phaseInfo.className = 'ticket-phase-info';
+        phaseInfo.style.position = 'absolute';
+        phaseInfo.style.bottom = '8px';
+        phaseInfo.style.right = '8px';
+        phaseInfo.style.fontSize = '11px';
+        phaseInfo.style.color = '#7c98b6';
+        phaseInfo.style.padding = '4px';
+        phaseInfo.style.borderRadius = '3px';
+        phaseInfo.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        phaseInfo.style.zIndex = '50';
+        
+        // Add current phase
+        const currentPhase = phaseData.currentPhase || 'Não atribuído';
+        phaseInfo.innerHTML = `<div><strong>Fase:</strong> ${currentPhase}</div>`;
+        
+        // Add tooltip with all phase times
+        let tooltipContent = 'Tempo por fase:\n';
+        let totalPhaseTime = 0;
+        
+        for (const [phase, time] of Object.entries(phaseData.phaseTimers)) {
+          if (time > 0) {
+            tooltipContent += `${phase}: ${Utils.formatTimeWithHoursAndMinutes(time)}\n`;
+            totalPhaseTime += time;
+          }
+        }
+        
+        phaseInfo.setAttribute('title', tooltipContent);
+        
+        // Add phase info to card
+        elements.ticketCard.appendChild(phaseInfo);
+        
+        // Add a click event to show more detailed phase info
+        phaseInfo.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showPhaseDetails(elements.ticketId, {
+            title: ticketTitle,
+            id: elements.ticketId
+          });
+        });
+      }
+    }
     
     // Add right-click event for context menu
     timerIcon.addEventListener('contextmenu', (e) => {

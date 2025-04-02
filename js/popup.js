@@ -406,123 +406,167 @@ function renderFromBackgroundData(data) {
     /**
      * Render phase data in the phases tab
      */
-    function renderPhaseData() {
-      if (!currentTimerData) return;
+    // No popup.js, melhore o método renderPhaseData
+function renderPhaseData() {
+  if (!currentTimerData) {
+    console.warn('Dados do timer não disponíveis');
+    return;
+  }
+  
+  const phaseTimers = currentTimerData.phaseTimers || {};
+  const selectedTicketId = phaseTicketSelector.value;
+  
+  console.log('Renderizando dados de fase:', {
+    selectedTicket: selectedTicketId,
+    phaseTimers
+  });
+  
+  // Limpe as exibições de dados de fase
+  phaseList.innerHTML = '';
+  phaseBar.innerHTML = '';
+  phaseLegend.innerHTML = '';
+  
+  // Se não há dados de fase
+  if (Object.keys(phaseTimers).length === 0) {
+    phaseList.innerHTML = `
+      <div class="empty-state">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-icon">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        Nenhum dado de fase registrado.
+        <p style="font-size: 11px; margin-top: 8px; color: #7c98b6;">
+          Os dados de fase são coletados automaticamente conforme os tickets são movidos entre as colunas do pipeline.
+        </p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Calcule totais de fase
+  let phaseTotals = {};
+  let totalTime = 0;
+  
+  if (selectedTicketId === 'all') {
+    // Calcule totais para todos os tickets
+    Object.keys(phaseTimers).forEach(ticketId => {
+      const phases = phaseTimers[ticketId] || {};
       
-      const phaseTimers = currentTimerData.phaseTimers || {};
-      const selectedTicketId = phaseTicketSelector.value;
+      // Log para depuração
+      console.log(`Fases para ticket ${ticketId}:`, phases);
       
-      // Clear phase data displays
-      phaseList.innerHTML = '';
-      phaseBar.innerHTML = '';
-      phaseLegend.innerHTML = '';
-      
-      // If no phase data
-      if (Object.keys(phaseTimers).length === 0) {
-        phaseList.innerHTML = `
-          <div class="empty-state">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-icon">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            Nenhum dado de fase registrado.
-            <p style="font-size: 11px; margin-top: 8px; color: #7c98b6;">
-              Os dados de fase são coletados automaticamente conforme os tickets são movidos entre as colunas do pipeline.
-            </p>
-          </div>
-        `;
-        return;
-      }
-      
-      // Calculate phase totals
-      let phaseTotals = {};
-      let totalTime = 0;
-      
-      if (selectedTicketId === 'all') {
-        // Calculate totals for all tickets
-        Object.keys(phaseTimers).forEach(ticketId => {
-          const phases = phaseTimers[ticketId];
-          Object.entries(phases).forEach(([phase, time]) => {
-            phaseTotals[phase] = (phaseTotals[phase] || 0) + time;
-            totalTime += time;
-          });
-        });
-      } else {
-        // Calculate for selected ticket only
-        const phases = phaseTimers[selectedTicketId] || {};
-        Object.entries(phases).forEach(([phase, time]) => {
-          phaseTotals[phase] = time;
-          totalTime += time;
-        });
-      }
-      
-      // If no time recorded
-      if (totalTime === 0) {
-        phaseList.innerHTML = `
-          <div class="empty-state">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-icon">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            Nenhum tempo registrado em fases.
-            <p style="font-size: 11px; margin-top: 8px; color: #7c98b6;">
-              ${selectedTicketId === 'all' ? 
-                'Nenhum ticket tem tempo registrado em fases.' : 
-                `O ticket "${currentTimerData.ticketTitles[selectedTicketId] || '#' + selectedTicketId}" não tem tempo registrado em fases.`}
-            </p>
-          </div>
-        `;
-        return;
-      }
-      
-      // Sort phases by time (descending)
-      const sortedPhases = Object.entries(phaseTotals)
-        .sort(([, timeA], [, timeB]) => timeB - timeA);
-      
-      // Render phase list
-      sortedPhases.forEach(([phase, time]) => {
-        const percentage = Math.round((time / totalTime) * 100);
-        const phaseItem = document.createElement('div');
-        phaseItem.className = 'phase-item';
-        phaseItem.innerHTML = `
-          <div>
-            <div class="phase-item-name">
-              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${phaseColorMap[phase] || '#7c98b6'}; margin-right: 5px;"></span>
-              ${phase}
-            </div>
-            <div style="font-size: 11px; color: #7c98b6;">${percentage}% do tempo total</div>
-          </div>
-          <div class="phase-item-time">${formatTimeWithSeconds(time)}</div>
-        `;
-        phaseList.appendChild(phaseItem);
+      Object.entries(phases).forEach(([phase, time]) => {
+        // Normalize a fase para comparação
+        const normalizedPhase = phase.toUpperCase();
+        phaseTotals[normalizedPhase] = (phaseTotals[normalizedPhase] || 0) + time;
+        totalTime += time;
       });
-      
-      // Render phase bar
-      sortedPhases.forEach(([phase, time]) => {
-        const percentage = (time / totalTime) * 100;
-        const segment = document.createElement('div');
-        segment.className = 'phase-segment';
-        segment.style.width = `${percentage}%`;
-        segment.style.backgroundColor = phaseColorMap[phase] || '#7c98b6';
-        segment.setAttribute('title', `${phase}: ${formatTimeWithSeconds(time)} (${Math.round(percentage)}%)`);
-        phaseBar.appendChild(segment);
-      });
-      
-      // Render legend (top 5 phases)
-      const topPhases = sortedPhases.slice(0, 5);
-      topPhases.forEach(([phase, time]) => {
-        const percentage = Math.round((time / totalTime) * 100);
-        const legendItem = document.createElement('div');
-        legendItem.className = 'phase-legend-item';
-        legendItem.innerHTML = `
-          <span class="phase-color" style="background-color: ${phaseColorMap[phase] || '#7c98b6'};"></span>
-          <span>${phase} (${percentage}%)</span>
-        `;
-        phaseLegend.appendChild(legendItem);
-      });
-    }
+    });
+  } else {
+    // Calcule para o ticket selecionado apenas
+    const phases = phaseTimers[selectedTicketId] || {};
+    
+    // Log para depuração
+    console.log(`Fases para ticket selecionado ${selectedTicketId}:`, phases);
+    
+    Object.entries(phases).forEach(([phase, time]) => {
+      // Normalize a fase para comparação
+      const normalizedPhase = phase.toUpperCase();
+      phaseTotals[normalizedPhase] = time;
+      totalTime += time;
+    });
+  }
+  
+  console.log('Totais de fase calculados:', {
+    phaseTotals,
+    totalTime
+  });
+  
+  // Se nenhum tempo registrado
+  if (totalTime === 0) {
+    phaseList.innerHTML = `
+      <div class="empty-state">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-icon">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        Nenhum tempo registrado em fases.
+        <p style="font-size: 11px; margin-top: 8px; color: #7c98b6;">
+          ${selectedTicketId === 'all' ? 
+            'Nenhum ticket tem tempo registrado em fases.' : 
+            `O ticket "${currentTimerData.ticketTitles[selectedTicketId] || '#' + selectedTicketId}" não tem tempo registrado em fases.`}
+        </p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Ordene fases por tempo (decrescente)
+  const sortedPhases = Object.entries(phaseTotals)
+    .sort(([, timeA], [, timeB]) => timeB - timeA);
+  
+  // Renderize lista de fases
+  sortedPhases.forEach(([phase, time]) => {
+    const percentage = Math.round((time / totalTime) * 100);
+    const phaseItem = document.createElement('div');
+    phaseItem.className = 'phase-item';
+    
+    // Encontre a fase original para exibição (primeira letra maiúscula, resto minúscula)
+    const displayPhase = CONFIG.knownPhases.find(
+      p => p.toUpperCase() === phase
+    ) || phase;
+    
+    phaseItem.innerHTML = `
+      <div>
+        <div class="phase-item-name">
+          <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${phaseColorMap[displayPhase] || phaseColorMap[phase] || '#7c98b6'}; margin-right: 5px;"></span>
+          ${displayPhase}
+        </div>
+        <div style="font-size: 11px; color: #7c98b6;">${percentage}% do tempo total</div>
+      </div>
+      <div class="phase-item-time">${formatTimeWithSeconds(time)}</div>
+    `;
+    phaseList.appendChild(phaseItem);
+  });
+  
+  // Renderize barra de fases
+  sortedPhases.forEach(([phase, time]) => {
+    const percentage = (time / totalTime) * 100;
+    const segment = document.createElement('div');
+    segment.className = 'phase-segment';
+    segment.style.width = `${percentage}%`;
+    
+    // Encontre a fase original para exibição
+    const displayPhase = CONFIG.knownPhases.find(
+      p => p.toUpperCase() === phase
+    ) || phase;
+    
+    segment.style.backgroundColor = phaseColorMap[displayPhase] || phaseColorMap[phase] || '#7c98b6';
+    segment.setAttribute('title', `${displayPhase}: ${formatTimeWithSeconds(time)} (${Math.round(percentage)}%)`);
+    phaseBar.appendChild(segment);
+  });
+  
+  // Renderize legenda (5 principais fases)
+  const topPhases = sortedPhases.slice(0, 5);
+  topPhases.forEach(([phase, time]) => {
+    const percentage = Math.round((time / totalTime) * 100);
+    const legendItem = document.createElement('div');
+    legendItem.className = 'phase-legend-item';
+    
+    // Encontre a fase original para exibição
+    const displayPhase = CONFIG.knownPhases.find(
+      p => p.toUpperCase() === phase
+    ) || phase;
+    
+    legendItem.innerHTML = `
+      <span class="phase-color" style="background-color: ${phaseColorMap[displayPhase] || phaseColorMap[phase] || '#7c98b6'};"></span>
+      <span>${displayPhase} (${percentage}%)</span>
+    `;
+    phaseLegend.appendChild(legendItem);
+  });
+}
     
     /**
      * Load color settings from data

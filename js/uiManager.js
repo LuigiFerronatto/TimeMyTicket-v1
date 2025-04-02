@@ -828,36 +828,64 @@ addTimerToCard(cardElement) {
      * @param {Object} ticketInfo - Ticket information
      */
     copyTimeReport(ticketId, ticketInfo) {
-      // Get phase data if PhaseManager exists
+      // Obtenha dados de fase se PhaseManager existir
       const phaseData = window.phaseManager ? window.phaseManager.getTicketPhaseData(ticketId).phaseTimers : {};
       
-      // Build report
+      console.log(`Copiando relatório para o ticket ${ticketId}:`, {
+        ticketInfo,
+        phaseData
+      });
+      
+      // Construa o relatório
       let report = `Tempo Gasto no Ticket: ${ticketInfo.title}\n`;
       report += `ID: ${ticketId}\n`;
-      report += `Fases: `;
+      report += `Proprietário: ${ticketInfo.owner}\n`;
+      report += `CDA Responsável: ${ticketInfo.cda}\n`;
+      report += `Status: ${ticketInfo.status}\n\n`;
+      report += `Fases: \n`;
       
-      // Add time per phase
+      // Adicione tempo por fase
       let hasFaseData = false;
+      let totalFaseTime = 0;
+      
       CONFIG.knownPhases.forEach(phase => {
-        const timeInPhase = phaseData[phase] || 0;
+        // Verifique tanto o nome da fase normalizado quanto o original
+        const upperPhase = phase.toUpperCase();
+        const timeInPhase = (phaseData[upperPhase] || phaseData[phase] || 0);
+        
         if (timeInPhase > 0) {
           hasFaseData = true;
-          report += `${phase}: ${Utils.formatTimeWithHoursAndMinutes(timeInPhase)} `;
+          totalFaseTime += timeInPhase;
+          report += `- ${phase}: ${Utils.formatTimeWithHoursAndMinutes(timeInPhase)}\n`;
         }
       });
       
       if (!hasFaseData) {
-        report += "Nenhuma fase com tempo registrado. ";
+        report += "Nenhuma fase com tempo registrado.\n";
+      } else {
+        report += `\nTempo Total em Fases: ${Utils.formatTimeWithHoursAndMinutes(totalFaseTime)}\n`;
       }
       
-      // Add total time
+      // Adicione tempo total
       const totalTime = window.timerManager ? window.timerManager.ticketTimers[ticketId] || 0 : 0;
-      report += `\nTempo Total: ${Utils.formatTimeWithHoursAndMinutes(totalTime)}`;
+      report += `\nTempo Total Registrado: ${Utils.formatTimeWithHoursAndMinutes(totalTime)}`;
       
-      // Copy to clipboard
+      // Se o ticket estiver ativo, adicione o tempo atual
+      if (window.timerManager && window.timerManager.activeTicket === ticketId && window.timerManager.timerStartTime) {
+        const elapsedSeconds = Math.floor((new Date() - window.timerManager.timerStartTime) / 1000);
+        const currentSession = Utils.formatTimeWithHoursAndMinutes(elapsedSeconds);
+        report += `\nSessão Atual: ${currentSession}`;
+        report += `\nTempo Total (incluindo sessão atual): ${Utils.formatTimeWithHoursAndMinutes(totalTime + elapsedSeconds)}`;
+      }
+      
+      // Adicione timestamp do relatório
+      report += `\n\nRelatório gerado em: ${new Date().toLocaleString()}`;
+      
+      // Copie para área de transferência
       navigator.clipboard.writeText(report)
         .then(() => {
           Utils.showToast('Relatório copiado para a área de transferência', 'success');
+          console.log('Relatório copiado com sucesso');
         })
         .catch(err => {
           console.error('Erro ao copiar relatório:', err);

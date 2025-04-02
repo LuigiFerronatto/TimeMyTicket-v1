@@ -208,61 +208,91 @@ class TimeMyTicket {
      * @returns {Promise<void>}
      */
     async generateAndSaveReport() {
-      // Ensure required modules are available
+      // Garantir que os módulos necessários estão disponíveis
       if (!window.timerManager || !window.phaseManager) {
-        throw new Error('Required modules not available');
+        throw new Error('Módulos necessários não disponíveis');
       }
       
-      // Prepare CSV header
+      console.log('Gerando relatório de tempo...');
+      
+      // Garantir que temos os dados mais recentes
+      await window.phaseManager.savePhaseData();
+      
+      // Prepare o cabeçalho do CSV
       let csvContent = "ID do Ticket,Título,Proprietário,CDA Responsável,Status,Tempo Total";
       
-      // Add columns for each known phase
+      // Adicione colunas para cada fase conhecida
       CONFIG.knownPhases.forEach(phase => {
         csvContent += `,Tempo em ${phase}`;
       });
       
       csvContent += "\n";
       
-      // Add each ticket with information
+      // Adicione cada ticket com informações
       for (const ticketId in window.timerManager.ticketTimers) {
         const ticketInfo = window.timerManager.getTicketInfo(ticketId);
         const phaseData = window.phaseManager.getTicketPhaseData(ticketId).phaseTimers;
         
-        // Calculate total time (including current if active)
+        console.log(`Adicionando ticket ${ticketId} ao relatório:`, {
+          ticketInfo,
+          phaseData
+        });
+        
+        // Calcule o tempo total (incluindo o atual, se ativo)
         let totalSeconds = window.timerManager.ticketTimers[ticketId] || 0;
         if (ticketId === window.timerManager.activeTicket && window.timerManager.timerStartTime) {
           const elapsedSeconds = Math.floor((new Date() - window.timerManager.timerStartTime) / 1000);
           totalSeconds += elapsedSeconds;
+          
+          // Também adicione este tempo à fase atual
+          const currentPhase = window.phaseManager.currentPhases[ticketId];
+          if (currentPhase && phaseData) {
+            // Inicialize se necessário
+            if (!phaseData[currentPhase]) {
+              phaseData[currentPhase] = 0;
+            }
+            // Adicione o tempo em andamento
+            phaseData[currentPhase] += elapsedSeconds;
+          }
         }
         
-        // Sanitize fields to avoid CSV issues
-        const sanitizedTitle = ticketInfo.title.replace(/,/g, ' ');
-        const sanitizedOwner = ticketInfo.owner.replace(/,/g, ' ');
-        const sanitizedCDA = ticketInfo.cda.replace(/,/g, ' ');
-        const sanitizedStatus = ticketInfo.status.replace(/,/g, ' ');
+        // Sanitize campos para evitar problemas no CSV
+        const sanitizedTitle = (ticketInfo.title || 'Sem título').replace(/,/g, ' ');
+        const sanitizedOwner = (ticketInfo.owner || 'Desconhecido').replace(/,/g, ' ');
+        const sanitizedCDA = (ticketInfo.cda || 'Não informado').replace(/,/g, ' ');
+        const sanitizedStatus = (ticketInfo.status || 'Desconhecido').replace(/,/g, ' ');
         
-        // Add row with basic data
+        // Adicione linha com dados básicos
         csvContent += `${ticketId},"${sanitizedTitle}","${sanitizedOwner}","${sanitizedCDA}","${sanitizedStatus}",${Utils.formatTimeWithSeconds(totalSeconds)}`;
         
-        // Add time in each phase
+        // Adicione tempo em cada fase
+        let tempoTotalEmFases = 0;
         CONFIG.knownPhases.forEach(phase => {
-          const timeInPhase = phaseData[phase] || 0;
+          const upperPhase = phase.toUpperCase();
+          // Verifique tanto o nome da fase normalizado quanto o original
+          const timeInPhase = (phaseData && (phaseData[upperPhase] || phaseData[phase])) || 0;
+          tempoTotalEmFases += timeInPhase;
           csvContent += `,${Utils.formatTimeWithSeconds(timeInPhase)}`;
         });
+        
+        // Log para verificar se os tempos estão sendo contabilizados corretamente
+        console.log(`Ticket ${ticketId}: Tempo total = ${Utils.formatTimeWithSeconds(totalSeconds)}, Tempo em fases = ${Utils.formatTimeWithSeconds(tempoTotalEmFases)}`);
         
         csvContent += "\n";
       }
       
-      // Send message to background script to save the CSV
+      // Envie mensagem para o script de background salvar o CSV
       return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({
           action: 'saveReportData',
           csvContent
         }, (response) => {
           if (response && response.success) {
+            console.log('Relatório gerado e salvo com sucesso!');
             resolve();
           } else {
-            reject(new Error(response?.error || 'Error saving report'));
+            console.error('Erro ao salvar relatório:', response?.error || 'Erro desconhecido');
+            reject(new Error(response?.error || 'Erro ao salvar relatório'));
           }
         });
       });

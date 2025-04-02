@@ -1,5 +1,7 @@
 // Global configuration for TimeMyTicket extension
 window.CONFIG = {
+
+  version: '1.1.0',
   // HubSpot DOM selectors
   selectors: {
       columnItemSelector: '[data-test-id="cdb-column-item"]',

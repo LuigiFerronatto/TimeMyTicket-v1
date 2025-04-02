@@ -1,55 +1,63 @@
 {
   "manifest_version": 3,
   "name": "TimeMyTicket",
-  "version": "1.0.0",
-  "description": "Cronometra e monitora o tempo gasto em tickets do HubSpot com interface intuitiva",
+  "version": "1.1.0",
+  "description": "Advanced time tracking for HubSpot tickets with intuitive interface",
   "permissions": [
-      "storage", 
-      "tabs", 
-      "contextMenus", 
-      "downloads"
+    "storage", 
+    "tabs", 
+    "contextMenus", 
+    "downloads",
+    "alarms"
   ],
   "host_permissions": [
-      "https://*.hubspot.com/*"
+    "https://*.hubspot.com/*"
   ],
   "background": {
-      "service_worker": "js/background.js"
+    "service_worker": "js/background.js"
   },
   "content_scripts": [
-      {
-          "matches": ["https://*.hubspot.com/*"],
-          "js": [
-              "js/config.js", 
-              "js/utils.js",
-              "js/timerManager.js",
-              "js/phaseManager.js", 
-              "js/uiManager.js",
-              "js/colorManager.js", 
-              "js/content.js"
-          ],
-          "css": ["css/styles.css"],
-          "run_at": "document_end"
-      }
+    {
+      "matches": ["https://*.hubspot.com/*"],
+      "js": [
+        "js/config.js", 
+        "js/utils.js",
+        "js/timerManager.js",
+        "js/phaseManager.js", 
+        "js/uiManager.js",
+        "js/colorManager.js", 
+        "js/content.js"
+      ],
+      "css": ["css/styles.css"],
+      "run_at": "document_end",
+      "all_frames": false
+    }
   ],
-  "icons": {
-      "128": "icons/icon128.png"
-  },
   "action": {
-      "default_popup": "popup.html",
-      "default_icon": {
-          "128": "icons/icon128.png"
-      },
-      "default_title": "TimeMyTicket - Monitor de tempo em tickets"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "128": "icons/icon128.png"
+    }
   },
   "web_accessible_resources": [
-      {
-          "resources": [
-              "fonts/*", 
-              "images/*", 
-              "css/*",
-              "js/config.js"
-          ],
-          "matches": ["https://*.hubspot.com/*"]
-      }
-  ]
+    {
+      "resources": [
+        "fonts/*", 
+        "images/*", 
+        "css/*",
+        "js/config.js"
+      ],
+      "matches": ["https://*.hubspot.com/*"]
+    }
+  ],
+  "commands": {
+    "start-timer": {
+      "suggested_key": "Ctrl+Shift+T",
+      "description": "Start/Pause timer for active ticket"
+    },
+    "view-report": {
+      "suggested_key": "Ctrl+Shift+R", 
+      "description": "Open time tracking report"
+    }
+  }
 }

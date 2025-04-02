@@ -9,6 +9,7 @@ class TimerManager {
     this.timerStartTime = null; // When current timer started
     this.timerInterval = null; // Reference to interval
     this.ticketTitles = {}; // Store ticket titles
+    this.ticketInfo = {}; // Store more detailed ticket information
     
     // Load data from storage
     this.init();
@@ -111,11 +112,15 @@ class TimerManager {
    * @param {string} ticketId - The ticket ID
    */
   startTimer(ticketId) {
-    const ticketTitle = this.ticketTitles[ticketId] || `Ticket #${ticketId}`;
-    console.log(`Starting timer for ticket: ${ticketId} - ${ticketTitle}`);
+    // Obtenha e armazene informações completas do ticket
+    const completeTicketInfo = this.getTicketInfo(ticketId);
+    const ticketTitle = completeTicketInfo.title || `Ticket #${ticketId}`;
     
-    // Store ticket title
+    console.log(`Starting timer for ticket: ${ticketId} - ${ticketTitle}`, completeTicketInfo);
+    
+    // Armazene as informações do ticket
     this.ticketTitles[ticketId] = ticketTitle;
+    this.ticketInfo[ticketId] = completeTicketInfo;
     
     // Send message to background script to start timer
     chrome.runtime.sendMessage({ 
@@ -305,120 +310,128 @@ class TimerManager {
     return true;
   }
   
-/**
-     * Handle timer reset message from background
-     */
-handleTimerReset(ticketId) {
-  // Sync with background to get latest state
-  this.syncWithBackgroundScript();
-  
-  // Update UI
-  this.updateTimerDisplay(ticketId, 0);
-  
-  // Remove active timer styles
-  if (window.uiManager) {
-    window.uiManager.updateActiveTimerStyles(ticketId, false);
+  /**
+   * Handle timer reset message from background
+   */
+  handleTimerReset(ticketId) {
+    // Sync with background to get latest state
+    this.syncWithBackgroundScript();
+    
+    // Update UI
+    this.updateTimerDisplay(ticketId, 0);
+    
+    // Remove active timer styles
+    if (window.uiManager) {
+      window.uiManager.updateActiveTimerStyles(ticketId, false);
+    }
   }
-}
 
-/**
- * Add time manually to a ticket
- * @param {string} ticketId - The ticket ID
- * @param {number} seconds - Time in seconds to add
- */
-addTimeManually(ticketId, seconds) {
-  if (!ticketId || seconds <= 0) return false;
-  
-  // Get current phase if PhaseManager exists
-  const currentPhase = window.phaseManager ? 
+  /**
+   * Add time manually to a ticket
+   * @param {string} ticketId - The ticket ID
+   * @param {number} seconds - Time in seconds to add
+   */
+  addTimeManually(ticketId, seconds) {
+    if (!ticketId || seconds <= 0) return false;
+    
+    // Get current phase if PhaseManager exists
+    const currentPhase = window.phaseManager ? 
                        window.phaseManager.currentPhases[ticketId] : null;
-  
-  // Send message to background script to add time
-  chrome.runtime.sendMessage({ 
-    action: 'addTimeManually', 
-    ticketId: ticketId,
-    phase: currentPhase,
-    seconds: seconds
-  });
-  
-  // Add time to local state (will be updated in syncWithBackgroundScript)
-  this.ticketTimers[ticketId] = (this.ticketTimers[ticketId] || 0) + seconds;
-  
-  // Update UI
-  this.updateTimerDisplay(ticketId, this.ticketTimers[ticketId]);
-  
-  return true;
-}
+    
+    // Send message to background script to add time
+    chrome.runtime.sendMessage({ 
+      action: 'addTimeManually', 
+      ticketId: ticketId,
+      phase: currentPhase,
+      seconds: seconds
+    });
+    
+    // Add time to local state (will be updated in syncWithBackgroundScript)
+    this.ticketTimers[ticketId] = (this.ticketTimers[ticketId] || 0) + seconds;
+    
+    // Update UI
+    this.updateTimerDisplay(ticketId, this.ticketTimers[ticketId]);
+    
+    return true;
+  }
 
-/**
- * Get ticket information
- * @param {string} ticketId - The ticket ID
- * @returns {Object} Ticket information
- */
-getTicketInfo(ticketId) {
-  // Find the ticket card in the DOM
-  const card = document.querySelector(`${CONFIG.selectors.ticketCardSelector}[${CONFIG.selectors.ticketIdAttribute}="${ticketId}"]`);
-  
-  // Default values
-  const ticketInfo = {
-    id: ticketId,
-    title: this.ticketTitles[ticketId] || `Ticket #${ticketId}`,
-    owner: 'Desconhecido',
-    cda: 'Não informado',
-    status: 'Desconhecido'
-  };
-  
-  if (card) {
-    // Extract ticket title
-    const titleElement = card.querySelector(CONFIG.selectors.cardTitleSelector);
-    if (titleElement) {
-      ticketInfo.title = titleElement.textContent.trim();
-      // Update stored title
-      this.ticketTitles[ticketId] = ticketInfo.title;
-      Utils.saveToStorage({ [CONFIG.storageKeys.ticketTitles]: this.ticketTitles });
+  /**
+   * Get ticket information
+   * @param {string} ticketId - The ticket ID
+   * @returns {Object} Ticket information
+   */
+  getTicketInfo(ticketId) {
+    // Check if we already have cached information
+    if (this.ticketInfo[ticketId]) {
+      return this.ticketInfo[ticketId];
     }
     
-    // Extract ticket owner
-    const ownerElement = card.querySelector(CONFIG.selectors.cardOwnerSelector);
-    if (ownerElement) {
-      ticketInfo.owner = ownerElement.textContent.trim();
-    }
+    // Find the ticket card in the DOM
+    const card = document.querySelector(`${CONFIG.selectors.ticketCardSelector}[${CONFIG.selectors.ticketIdAttribute}="${ticketId}"]`);
     
-    // Extract CDA responsible
-    const cdaElement = card.querySelector(CONFIG.selectors.cdaResponsibleSelector);
-    if (cdaElement) {
-      ticketInfo.cda = cdaElement.textContent.trim();
-    }
+    // Default values
+    const ticketInfo = {
+      id: ticketId,
+      title: this.ticketTitles[ticketId] || `Ticket #${ticketId}`,
+      owner: 'Desconhecido',
+      cda: 'Não informado',
+      status: 'Desconhecido'
+    };
     
-    // Extract status (current column/phase)
-    const column = this.findCardColumn(card);
-    if (column) {
-      const columnNameElement = column.querySelector(CONFIG.selectors.phaseNameSelector);
-      if (columnNameElement) {
-        ticketInfo.status = columnNameElement.textContent.trim();
+    if (card) {
+      // Extract ticket title
+      const titleElement = card.querySelector(CONFIG.selectors.cardTitleSelector);
+      if (titleElement) {
+        ticketInfo.title = titleElement.textContent.trim();
+        // Update stored title
+        this.ticketTitles[ticketId] = ticketInfo.title;
+        Utils.saveToStorage({ [CONFIG.storageKeys.ticketTitles]: this.ticketTitles });
       }
+      
+      // Extract ticket owner
+      const ownerElement = card.querySelector(CONFIG.selectors.cardOwnerSelector);
+      if (ownerElement) {
+        ticketInfo.owner = ownerElement.textContent.trim();
+      }
+      
+      // Extract CDA responsible
+      const cdaElement = card.querySelector(CONFIG.selectors.cdaResponsibleSelector);
+      if (cdaElement) {
+        ticketInfo.cda = cdaElement.textContent.trim();
+      }
+      
+      // Extract status (current column/phase)
+      const column = this.findCardColumn(card);
+      if (column) {
+        const columnNameElement = column.querySelector(CONFIG.selectors.phaseNameSelector);
+        if (columnNameElement) {
+          ticketInfo.status = columnNameElement.textContent.trim();
+        }
+      }
+      
+      // Cache the information
+      this.ticketInfo[ticketId] = ticketInfo;
     }
+    
+    return ticketInfo;
   }
-  
-  return ticketInfo;
-}
 
-/**
- * Find the column containing a card
- * @param {HTMLElement} card - The card element
- * @returns {HTMLElement|null} The column element
- */
-findCardColumn(card) {
-  // Find the column by traversing up the DOM
-  let currentElement = card;
-  
-  // Try to find the column container
-  while (currentElement && !currentElement.matches('[data-test-id="cdb-column"]')) {
-    currentElement = currentElement.parentElement;
+  /**
+   * Find the column containing a card
+   * @param {HTMLElement} card - The card element
+   * @returns {HTMLElement|null} The column element
+   */
+  findCardColumn(card) {
+    // Find the column by traversing up the DOM
+    let currentElement = card;
+    
+    // Try to find the column container
+    while (currentElement && !currentElement.matches('[data-test-id="cdb-column"]')) {
+      currentElement = currentElement.parentElement;
+    }
+    
+    return currentElement;
   }
-  
-  return currentElement;
-}
 }
 
 // Create global instance

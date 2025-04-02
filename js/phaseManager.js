@@ -91,17 +91,32 @@ class PhaseManager {
       
       // Get all tickets in this phase with more robust selector
       const ticketCards = column.querySelectorAll(CONFIG.selectors.ticketCardSelector);
-      if (ticketCards.length === 0) {
-        console.warn(`Nenhum ticket encontrado na fase "${phaseName}". Tentando seletor alternativo...`);
-        // Tente um seletor alternativo
-        const altTickets = column.querySelectorAll('[data-selenium-info="true"]');
-        console.log(`Encontrou ${altTickets.length} tickets com seletor alternativo`);
-        
-        this.processTicketsInPhase(altTickets, phaseName, visibleTickets);
-      } else {
-        console.log(`Encontrou ${ticketCards.length} tickets na fase "${phaseName}"`);
-        this.processTicketsInPhase(ticketCards, phaseName, visibleTickets);
+      
+      // CORREÇÃO ERRO 1: Evitar warning desnecessário e usar abordagem unificada
+      // Combinar todos os possíveis seletores em um único processamento
+      const allTickets = [];
+      
+      // Adicionar tickets do seletor principal
+      if (ticketCards.length > 0) {
+        ticketCards.forEach(card => allTickets.push(card));
       }
+      
+      // Tente também obter tickets com seletores alternativos
+      const altTickets = column.querySelectorAll('[data-selenium-info="true"]');
+      if (altTickets.length > 0) {
+        altTickets.forEach(card => {
+          // Verificar se o card já não foi adicionado
+          if (!Array.from(ticketCards).some(c => c === card)) {
+            allTickets.push(card);
+          }
+        });
+      }
+      
+      // Registre o número total de tickets encontrados
+      console.log(`Encontrou ${allTickets.length} tickets na fase "${phaseName}"`);
+      
+      // Processe todos os tickets encontrados
+      this.processTicketsInPhase(allTickets, phaseName, visibleTickets);
     });
     
     // Check for tickets that were removed from the DOM
@@ -224,80 +239,73 @@ class PhaseManager {
    * @param {string} ticketId - The ticket ID
    * @param {string} newPhase - The new phase
    */
-  // Melhore o método handlePhaseChange no PhaseManager.js
-// In PhaseManager.js, update the handlePhaseChange method
-handlePhaseChange(ticketId, newPhase) {
-  console.log(`Ticket ${ticketId} movido para fase: ${newPhase}`);
-  
-  const now = new Date();
-  const oldPhase = this.currentPhases[ticketId];
-  
-  // Se o ticket já estava sendo rastreado, contabilize o tempo na fase anterior
-  if (oldPhase && this.lastPhaseChange[ticketId]) {
-    const previousStartTime = new Date(this.lastPhaseChange[ticketId]);
-    const timeInPreviousPhase = Math.floor((now - previousStartTime) / 1000);
+  handlePhaseChange(ticketId, newPhase) {
+    console.log(`Ticket ${ticketId} movido para fase: ${newPhase}`);
     
-    // Só contabilize o tempo se for razoável (evite problemas com timestamps incorretos)
-    if (timeInPreviousPhase > 0 && timeInPreviousPhase < 86400 * 30) { // Não mais que 30 dias
-      console.log(`Calculando tempo na fase anterior: ${oldPhase}, tempo: ${timeInPreviousPhase} segundos`);
-      
-      // Inicialize a estrutura se necessário
-      if (!this.phaseTimers[ticketId]) {
-        this.phaseTimers[ticketId] = {};
-      }
-      
-      // Normalize phase names to uppercase for consistent comparisons
-      const normalizedOldPhase = oldPhase.toUpperCase();
-      
-      // Acumule tempo na fase anterior
-      this.phaseTimers[ticketId][normalizedOldPhase] = (this.phaseTimers[ticketId][normalizedOldPhase] || 0) + timeInPreviousPhase;
-      
-      console.log(`Adicionado ${Utils.formatTimeWithSeconds(timeInPreviousPhase)} à fase "${normalizedOldPhase}" para o ticket ${ticketId}`);
-      console.log(`Total na fase "${normalizedOldPhase}": ${Utils.formatTimeWithSeconds(this.phaseTimers[ticketId][normalizedOldPhase])}`);
-      
-      // Save phase data immediately
-      this.savePhaseData();
-      
-      // Se o ticket está ativo, não adicione ao tempo total (o timer lidará com isso)
-      if (window.timerManager && window.timerManager.activeTicket === ticketId) {
-        console.log(`Ticket ${ticketId} está ativo. Timer lidará com o tempo total.`);
-      } else {
-        // Se o ticket não está ativo, adicione o tempo gasto ao tempo total
-        if (window.timerManager) {
-          window.timerManager.addTimeManually(ticketId, timeInPreviousPhase);
-        }
-      }
-    } else {
-      console.warn(`Tempo inválido calculado para fase anterior: ${timeInPreviousPhase}s. Ignorando.`);
+    const now = new Date();
+    const oldPhase = this.currentPhases[ticketId];
+    const isActiveTicket = window.timerManager && window.timerManager.activeTicket === ticketId;
+    
+    // Pausar timer automaticamente se o ticket estiver ativo
+    if (isActiveTicket) {
+      console.log(`Pausando timer automaticamente devido à mudança de fase do ticket ${ticketId}`);
+      // Calcular o tempo gasto até o momento da mudança antes de pausar
+      window.timerManager.pauseTimer();
     }
+    
+    // Se o ticket já estava sendo rastreado, contabilize o tempo na fase anterior
+    if (oldPhase && this.lastPhaseChange[ticketId]) {
+      const previousStartTime = new Date(this.lastPhaseChange[ticketId]);
+      const timeInPreviousPhase = Math.floor((now - previousStartTime) / 1000);
+      
+      // Só contabilize o tempo se for razoável (evite problemas com timestamps incorretos)
+      if (timeInPreviousPhase > 0 && timeInPreviousPhase < 86400 * 30) { // Não mais que 30 dias
+        console.log(`Calculando tempo na fase anterior: ${oldPhase}, tempo: ${timeInPreviousPhase} segundos`);
+        
+        // Inicialize a estrutura se necessário
+        if (!this.phaseTimers[ticketId]) {
+          this.phaseTimers[ticketId] = {};
+        }
+        
+        // Normalize phase names to uppercase for consistent comparisons
+        const normalizedOldPhase = oldPhase.toUpperCase();
+        
+        // Acumule tempo na fase anterior
+        this.phaseTimers[ticketId][normalizedOldPhase] = (this.phaseTimers[ticketId][normalizedOldPhase] || 0) + timeInPreviousPhase;
+        
+        console.log(`Adicionado ${Utils.formatTimeWithSeconds(timeInPreviousPhase)} à fase "${normalizedOldPhase}" para o ticket ${ticketId}`);
+        console.log(`Total na fase "${normalizedOldPhase}": ${Utils.formatTimeWithSeconds(this.phaseTimers[ticketId][normalizedOldPhase])}`);
+      } else {
+        console.warn(`Tempo inválido calculado para fase anterior: ${timeInPreviousPhase}s. Ignorando.`);
+      }
+    }
+    
+    // Normalize new phase name
+    const normalizedNewPhase = newPhase.toUpperCase();
+    
+    // Atualize a fase atual e o timestamp
+    this.currentPhases[ticketId] = normalizedNewPhase;
+    this.lastPhaseChange[ticketId] = now.toISOString();
+    
+    // Salve no armazenamento imediatamente
+    this.savePhaseData();
+    
+    // Exiba notificação
+    Utils.showToast(`Ticket movido para "${newPhase}"`, 'info');
+    
+    // Atualize a UI se necessário
+    if (window.timerManager) {
+      window.timerManager.updateTimerDisplay(ticketId, window.timerManager.ticketTimers[ticketId] || 0);
+    }
+    
+    // Notificar outras abas sobre a mudança de fase
+    chrome.runtime.sendMessage({
+      action: 'phaseChanged',
+      ticketId: ticketId,
+      oldPhase: oldPhase,
+      newPhase: normalizedNewPhase
+    });
   }
-  
-  // Normalize new phase name
-  const normalizedNewPhase = newPhase.toUpperCase();
-  
-  // Atualize a fase atual e o timestamp
-  this.currentPhases[ticketId] = normalizedNewPhase;
-  this.lastPhaseChange[ticketId] = now.toISOString();
-  
-  // Salve no armazenamento imediatamente
-  this.savePhaseData();
-  
-  // Exiba notificação
-  Utils.showToast(`Ticket movido para "${newPhase}"`, 'info');
-  
-  // Atualize a UI se necessário
-  if (window.timerManager) {
-    window.timerManager.updateTimerDisplay(ticketId, window.timerManager.ticketTimers[ticketId] || 0);
-  }
-  
-  // Notificar outras abas sobre a mudança de fase
-  chrome.runtime.sendMessage({
-    action: 'phaseChanged',
-    ticketId: ticketId,
-    oldPhase: oldPhase,
-    newPhase: normalizedNewPhase
-  });
-}
   
   /**
    * Add time to a specific phase
@@ -315,8 +323,11 @@ handlePhaseChange(ticketId, newPhase) {
       this.phaseTimers[ticketId] = {};
     }
     
+    // Normalize phase name for consistency
+    const normalizedPhaseName = phaseName.toUpperCase();
+    
     // Add time to specific phase
-    this.phaseTimers[ticketId][phaseName] = (this.phaseTimers[ticketId][phaseName] || 0) + seconds;
+    this.phaseTimers[ticketId][normalizedPhaseName] = (this.phaseTimers[ticketId][normalizedPhaseName] || 0) + seconds;
     
     // Save to storage
     this.savePhaseData();
@@ -380,66 +391,62 @@ handlePhaseChange(ticketId, newPhase) {
   }
 
   // Método auxiliar para log da estrutura DOM - ajuda a depurar seletores
-logDOMStructure() {
-  console.log('Analisando estrutura DOM para identificar fases...');
-  
-  // Log de todos os elementos que podem conter nomes de fase
-  const headings = document.querySelectorAll('h6');
-  console.log(`Encontrou ${headings.length} elementos h6 que podem ser cabeçalhos de fase:`);
-  headings.forEach((h, i) => {
-    console.log(`Cabeçalho ${i}:`, h.textContent.trim(), h);
-  });
-  
-  // Log de todos os elementos de coluna potenciais
-  const potentialColumns = document.querySelectorAll('[data-test-id*="column"]');
-  console.log(`Encontrou ${potentialColumns.length} potenciais elementos de coluna:`);
-  potentialColumns.forEach((col, i) => {
-    console.log(`Coluna ${i}:`, col);
-  });
-}
+  logDOMStructure() {
+    console.log('Analisando estrutura DOM para identificar fases...');
+    
+    // Log de todos os elementos que podem conter nomes de fase
+    const headings = document.querySelectorAll('h6');
+    console.log(`Encontrou ${headings.length} elementos h6 que podem ser cabeçalhos de fase:`);
+    headings.forEach((h, i) => {
+      console.log(`Cabeçalho ${i}:`, h.textContent.trim(), h);
+    });
+    
+    // Log de todos os elementos de coluna potenciais
+    const potentialColumns = document.querySelectorAll('[data-test-id*="column"]');
+    console.log(`Encontrou ${potentialColumns.length} potenciais elementos de coluna:`);
+    potentialColumns.forEach((col, i) => {
+      console.log(`Coluna ${i}:`, col);
+    });
+  }
   
   /**
    * Save phase data to storage
    */
-  /**
- * Save phase data to storage
- */
-savePhaseData() {
-  console.log('Salvando dados de fase:', {
-    phaseTimers: this.phaseTimers,
-    currentPhases: this.currentPhases,
-    lastPhaseChange: this.lastPhaseChange
-  });
-  
-  return new Promise((resolve, reject) => {
-    try {
-      // Save phase data to both chrome.storage.local and localStorage for redundancy
-      chrome.storage.local.set({
-        [CONFIG.storageKeys.phaseTimers]: this.phaseTimers,
-        [CONFIG.storageKeys.currentPhases]: this.currentPhases,
-        [CONFIG.storageKeys.lastPhaseChange]: this.lastPhaseChange
-      }, () => {
-        if (chrome.runtime.lastError) {
-          console.error('Erro ao salvar dados de fase no chrome.storage:', chrome.runtime.lastError);
-          // Fall back to localStorage if chrome.storage fails
-          localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.phaseTimers}`, JSON.stringify(this.phaseTimers));
-          localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.currentPhases}`, JSON.stringify(this.currentPhases));
-          localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.lastPhaseChange}`, JSON.stringify(this.lastPhaseChange));
+  savePhaseData() {
+    const self = this; // Preservar referência ao this
+    return new Promise((resolve) => {
+      try {
+        if (chrome?.storage?.local) {
+          chrome.storage.local.set({
+            [CONFIG.storageKeys.phaseTimers]: self.phaseTimers,
+            [CONFIG.storageKeys.currentPhases]: self.currentPhases,
+            [CONFIG.storageKeys.lastPhaseChange]: self.lastPhaseChange
+          }, () => {
+            if (chrome.runtime.lastError) {
+              console.warn('Chrome storage error:', chrome.runtime.lastError);
+              fallbackToLocalStorage();
+            }
+            resolve();
+          });
+        } else {
+          fallbackToLocalStorage();
         }
-        
-        console.log('Dados de fase salvos com sucesso');
-        resolve();
-      });
-    } catch (error) {
-      console.error('Erro ao salvar dados de fase:', error);
-      // Fallback para local storage no caso de erro
-      localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.phaseTimers}`, JSON.stringify(this.phaseTimers));
-      localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.currentPhases}`, JSON.stringify(this.currentPhases));
-      localStorage.setItem(`hubspot_timer_${CONFIG.storageKeys.lastPhaseChange}`, JSON.stringify(this.lastPhaseChange));
-      resolve();
-    }
-  });
-}
+      } catch (error) {
+        console.error('Error saving phase data:', error);
+        fallbackToLocalStorage();
+      }
+  
+      function fallbackToLocalStorage() {
+        try {
+          localStorage.setItem('timeMyTicket_phaseTimers', JSON.stringify(self.phaseTimers));
+          localStorage.setItem('timeMyTicket_currentPhases', JSON.stringify(self.currentPhases));
+          localStorage.setItem('timeMyTicket_lastPhaseChange', JSON.stringify(self.lastPhaseChange));
+        } catch (localStorageError) {
+          console.error('Fallback storage failed:', localStorageError);
+        }
+      }
+    });
+  }
 }
 
 // Create global instance

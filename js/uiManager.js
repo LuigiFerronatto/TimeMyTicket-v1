@@ -525,12 +525,12 @@ addTimerToCard(cardElement) {
         phaseInfo.style.color = '#7c98b6';
         phaseInfo.style.padding = '4px';
         phaseInfo.style.borderRadius = '3px';
-        phaseInfo.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        phaseInfo.style.backgroundColor = 'rgba(255, 255, 255, 1)';
         phaseInfo.style.zIndex = '50';
         
         // Add current phase
         const currentPhase = phaseData.currentPhase || 'Não atribuído';
-        phaseInfo.innerHTML = `<div><strong>Fase:</strong> ${currentPhase}</div>`;
+        phaseInfo.innerHTML = `<div><strong>🕑 Tempo total por fase</strong></div>`;
         
         // Add tooltip with all phase times
         let tooltipContent = 'Tempo por fase:\n';
@@ -591,6 +591,20 @@ addTimerToCard(cardElement) {
     
     return elements;
   }
+
+
+
+cleanup() {
+  // Limpar todos os intervalos
+  if (this.timerInterval) {
+    clearInterval(this.timerInterval);
+    this.timerInterval = null;
+  }
+  
+  // Limpar referências a elementos DOM
+  this.createdElements.timers.clear();
+  this.createdElements.animations.clear();
+}
     
     /**
      * Show context menu for timer

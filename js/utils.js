@@ -14,7 +14,8 @@ const Utils = {
       
       return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     },
-    
+
+
     /**
      * Format time in seconds to a human-readable format (Xh Ymin)
      * @param {number} seconds - Total time in seconds
@@ -53,6 +54,18 @@ const Utils = {
         minute: '2-digit'
       });
     },
+
+        /**
+ * Calculate total time from phase data with fallback
+ * @param {Object} phaseData - Phase timers (ex: { "FASE A": 200, "FASE B": 300 })
+ * @param {number} [fallback=0] - Optional fallback value
+ * @returns {number} Total time in seconds
+ */
+getTotalPhaseTime(phaseData, fallback = 0) {
+  if (!phaseData || typeof phaseData !== 'object') return fallback;
+  const total = Object.values(phaseData).reduce((acc, seconds) => acc + seconds, 0);
+  return total > 0 ? total : fallback;
+},
     
     /**
      * Get data from chrome.storage.local

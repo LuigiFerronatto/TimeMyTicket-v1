@@ -264,7 +264,7 @@ class TimeMyTicket {
       });
       
       // Calcule o tempo total (incluindo o atual, se ativo)
-      let totalSeconds = window.timerManager.ticketTimers[ticketId] || 0;
+      let totalSeconds = Utils.getTotalPhaseTime(phaseData, window.timerManager.ticketTimers[ticketId] || 0);
       if (ticketId === window.timerManager.activeTicket && window.timerManager.timerStartTime) {
         const elapsedSeconds = Math.floor((new Date() - window.timerManager.timerStartTime) / 1000);
         totalSeconds += elapsedSeconds;

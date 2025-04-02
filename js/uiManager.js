@@ -931,7 +931,7 @@ cleanup() {
       }
       
       // Adicione tempo total
-      const totalTime = window.timerManager ? window.timerManager.ticketTimers[ticketId] || 0 : 0;
+      const totalTime = Utils.getTotalPhaseTime(phaseData, window.timerManager?.ticketTimers[ticketId] || 0);
       report += `\nTempo Total Registrado: ${Utils.formatTimeWithHoursAndMinutes(totalTime)}`;
       
       // Se o ticket estiver ativo, adicione o tempo atual

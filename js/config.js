@@ -55,9 +55,9 @@ window.CONFIG = {
   // Animation settings
   animation: {
       activeBorderColor: 'rgb(255, 124, 32)',
-      pulseInterval: 2,
+      pulseInterval: 3,
       minBorderWidth: 1,
-      maxBorderWidth: 5
+      maxBorderWidth: 6
   },
   
   // Storage keys

@@ -459,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="ticket-title">${ticketInfo.title}</div>
           <div class="ticket-id">#${ticketId}</div>
           <div class="ticket-info">
-            <span class="ticket-phase">Clique para ver o tempo por fase</span>
+            <span class="ticket-phase">Fase atual: ${currentPhase}</span>
             ${ticketInfo.owner ? `<span class="ticket-owner">Responsável: ${ticketInfo.owner}</span>` : ''}
             ${ticketInfo.cda ? `<span class="ticket-cda">CDA: ${ticketInfo.cda}</span>` : ''}
           </div>
@@ -1155,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const phaseData = currentTimerData.phaseTimers[currentContextTicketId] || {};
     const ticketInfo = getTicketInfoFromData(currentTimerData, currentContextTicketId);
-    
+  
     // Build report
     let report = `Tempo Gasto no Ticket: ${ticketInfo.title}\n`;
     report += `ID: ${currentContextTicketId}\n`;
@@ -1163,45 +1163,43 @@ document.addEventListener('DOMContentLoaded', () => {
     report += `CDA Responsável: ${ticketInfo.cda || 'Não informado'}\n`;
     report += `Status: ${ticketInfo.status || 'Desconhecido'}\n\n`;
     report += `Tempo por fase:\n`;
-    
-    // Add time per phase
+  
+    // Adicionar tempo por fase
     let hasFaseData = false;
-    let totalPhaseTime = 0;
-    
+  
     CONFIG.knownPhases.forEach(phase => {
-      // Verificar tanto o nome da fase normalizado quanto o original
       const upperPhase = phase.toUpperCase();
-      const timeInPhase = (phaseData[upperPhase] || phaseData[phase] || 0);
-      
+      const timeInPhase = phaseData[upperPhase] || phaseData[phase] || 0;
+  
       if (timeInPhase > 0) {
         hasFaseData = true;
-        totalPhaseTime += timeInPhase;
         report += `- ${phase}: ${formatTimeWithHoursAndMinutes(timeInPhase)}\n`;
       }
     });
-    
+  
+    const fallbackTotal = currentTimerData.ticketTimers[currentContextTicketId] || 0;
+    const totalPhaseTime = Utils.getTotalPhaseTime(phaseData, fallbackTotal);
+  
     if (!hasFaseData) {
       report += "Nenhuma fase com tempo registrado.\n";
     } else {
       report += `\nTempo Total em Fases: ${formatTimeWithHoursAndMinutes(totalPhaseTime)}\n`;
     }
-    
-    // Add total time
-    const totalTime = currentTimerData.ticketTimers[currentContextTicketId] || 0;
-    report += `\nTempo Total Registrado: ${formatTimeWithHoursAndMinutes(totalTime)}`;
-    
+  
     // Se o ticket estiver ativo, adicione o tempo atual
+    let totalWithCurrent = totalPhaseTime;
     if (currentTimerData.activeTicket === currentContextTicketId && currentTimerData.timerStartTime) {
       const elapsedSeconds = Math.floor((new Date() - new Date(currentTimerData.timerStartTime)) / 1000);
       const currentSession = formatTimeWithHoursAndMinutes(elapsedSeconds);
+      totalWithCurrent += elapsedSeconds;
       report += `\nSessão Atual: ${currentSession}`;
-      report += `\nTempo Total (incluindo sessão atual): ${formatTimeWithHoursAndMinutes(totalTime + elapsedSeconds)}`;
+      report += `\nTempo Total (incluindo sessão atual): ${formatTimeWithHoursAndMinutes(totalWithCurrent)}`;
     }
-    
-    // Add timestamp
+  
+    // Timestamp
     report += `\n\nRelatório gerado em: ${new Date().toLocaleString()}`;
-    
-    // Copy to clipboard
+  
+    // Copiar para a área de transferência
     navigator.clipboard.writeText(report)
       .then(() => {
         showSuccessMessage('Relatório copiado para a área de transferência');
@@ -1210,7 +1208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Erro ao copiar relatório:', err);
         showSuccessMessage('Erro ao copiar relatório', true);
       });
-    
+  
     hideContextMenu();
   }
   
